@@ -1,0 +1,57 @@
+.root {
+    -fx-font-family: "Inter", "Segoe UI", Arial;
+    -fx-background-color: #0b1220;
+}
+
+.topbar {
+    -fx-background-color: rgba(255,255,255,0.04);
+    -fx-border-color: rgba(255,255,255,0.08);
+    -fx-border-width: 0 0 1 0;
+}
+
+.title {
+    -fx-font-size: 22px;
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+}
+
+.button {
+    -fx-background-color: rgba(255,255,255,0.08);
+    -fx-text-fill: white;
+    -fx-background-radius: 12;
+    -fx-padding: 10 14;
+    -fx-cursor: hand;
+}
+.button:hover {
+    -fx-background-color: rgba(255,255,255,0.14);
+}
+
+.status {
+    -fx-text-fill: rgba(255,255,255,0.8);
+    -fx-font-size: 13px;
+}
+
+.die {
+    -fx-background-color: rgba(255,255,255,0.08);
+    -fx-border-color: rgba(255,255,255,0.12);
+    -fx-border-radius: 18;
+    -fx-background-radius: 18;
+    -fx-alignment: center;
+}
+
+.die-label {
+    -fx-font-size: 44px;
+    -fx-text-fill: white;
+    -fx-font-weight: 800;
+}
+.die-title {
+    -fx-text-fill: rgba(255,255,255,0.75);
+    -fx-font-size: 14px;
+}
+
+.die.active {
+    -fx-border-color: rgba(90,200,255,0.9);
+    -fx-border-width: 2px;
+    -fx-border-radius: 18px;
+    -fx-effect: dropshadow(gaussian, rgba(90,200,255,0.35), 18, 0.3, 0, 0);
+}
