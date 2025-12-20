@@ -16,6 +16,7 @@ import org.dicegame.model.*;
 import javafx.application.Platform;
 import javafx.stage.Modality;
 
+import org.dicegame.persistence.ScoreEleveFactory;
 
 
 public class JavaFXIHM implements IHM {
@@ -28,7 +29,7 @@ public class JavaFXIHM implements IHM {
 
     private final Stage stage;
 
-    private final ScoreEleve scoreEleve = new ScoreEleve();
+    private final ScoreEleve scoreEleve = ScoreEleveFactory.create();
     private final Randomizer randomizer = new Randomizer();
 
     private int nbTours = 10;
@@ -270,7 +271,6 @@ public class JavaFXIHM implements IHM {
         dialog.initOwner(stage);
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Tableau des scores");
-
         TableView<Saisie> table = new TableView<>();
         TableColumn<Saisie, String> colNom = new TableColumn<>("Nom");
         colNom.setCellValueFactory(new PropertyValueFactory<>("nomSaisie"));
@@ -281,8 +281,21 @@ public class JavaFXIHM implements IHM {
         table.getColumns().addAll(colNom, colScore);
         table.setItems(FXCollections.observableArrayList(scoreEleve.getSaisies()));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        Button refreshBtn = new Button("Rafraîchir");
+        refreshBtn.setOnAction(ev -> {
+            // If underlying ScoreEleve is persistent, ask it to reload
+            if (scoreEleve instanceof org.dicegame.persistence.PersistentScoreEleve) {
+                ((org.dicegame.persistence.PersistentScoreEleve) scoreEleve).reload();
+            }
+            table.setItems(FXCollections.observableArrayList(scoreEleve.getSaisies()));
+        });
+
+        HBox controls = new HBox(8, refreshBtn);
+        controls.setPadding(new Insets(8));
+        controls.setAlignment(Pos.CENTER_RIGHT);
 
         BorderPane root = new BorderPane(table);
+        root.setTop(controls);
         root.setPadding(new Insets(12));
 
         Scene scene = new Scene(root, 520, 380);

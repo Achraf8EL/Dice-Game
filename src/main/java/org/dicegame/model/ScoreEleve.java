@@ -14,4 +14,11 @@ public class ScoreEleve {
     public List<Saisie> getSaisies() {
         return Collections.unmodifiableList(saisies);
     }
+
+    /**
+     * Clear all saved saisies (for implementations that reload from persistence).
+     */
+    protected void clear() {
+        saisies.clear();
+    }
 }
