@@ -1,12 +1,12 @@
 package org.dicegame.persistence;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+import javax.sql.DataSource;
+
 import org.dicegame.config.Config;
 import org.flywaydb.core.Flyway;
 
-import javax.sql.DataSource;
-import java.sql.SQLException;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 public final class DataSourceProvider {
     private DataSourceProvider() {}
@@ -42,14 +42,21 @@ public final class DataSourceProvider {
 
         HikariDataSource hikari = new HikariDataSource(cfg);
 
-        // Run Flyway migrations if enabled
+        
         if (Config.isFlywayEnabled()) {
-            Flyway flyway = Flyway.configure()
-                    .dataSource(hikari)
-                    .schemas(Config.getDbSchema())
-                    .locations("classpath:db/migration")
-                    .load();
-            flyway.migrate();
+            try {
+                Flyway flyway = Flyway.configure()
+                        .dataSource(hikari)
+                        .schemas(Config.getDbSchema())
+                        .locations("classpath:db/migration")
+                        .baselineOnMigrate(true)
+                        .load();
+                flyway.migrate();
+            } catch (org.flywaydb.core.api.FlywayException ex) {
+                System.out.println("[DB DEBUG] Flyway migration skipped or failed: " + ex.getMessage());
+            } catch (NoClassDefFoundError | Exception ex) {
+                System.out.println("[DB DEBUG] Flyway not available or migration error: " + ex.getMessage());
+            }
         }
 
         return hikari;

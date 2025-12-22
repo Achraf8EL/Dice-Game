@@ -7,10 +7,10 @@ public final class ScoreEleveFactory {
 
     public static ScoreEleve create() {
         String mode = org.dicegame.config.Config.getScorePersistence();
+        System.out.println("[DB DEBUG] Score persistence mode = " + mode);
         if ("DB".equalsIgnoreCase(mode)) {
             try {
                 javax.sql.DataSource ds = DataSourceProvider.getDataSource();
-                // Lancer Flyway si activé
                 if (org.dicegame.config.Config.isFlywayEnabled()) {
                     try {
                         org.flywaydb.core.Flyway flyway = org.flywaydb.core.Flyway.configure()
@@ -19,14 +19,12 @@ public final class ScoreEleveFactory {
                                 .load();
                         flyway.migrate();
                     } catch (NoClassDefFoundError | Exception ex) {
-                        // Flyway non présent ou migration échouée -> on continue sans migration
                         ex.printStackTrace();
                     }
                 }
                 return new PersistentScoreEleve(ds);
             } catch (Exception e) {
                 e.printStackTrace();
-                // fallback
                 return new ScoreEleve();
             }
         }

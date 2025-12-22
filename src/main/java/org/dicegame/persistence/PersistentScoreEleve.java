@@ -1,9 +1,9 @@
 package org.dicegame.persistence;
 
+import javax.sql.DataSource;
+
 import org.dicegame.model.Saisie;
 import org.dicegame.model.ScoreEleve;
-
-import javax.sql.DataSource;
 
 public class PersistentScoreEleve extends ScoreEleve {
     private final SaisieDao saisieDao;
@@ -19,16 +19,14 @@ public class PersistentScoreEleve extends ScoreEleve {
                 for (org.dicegame.model.Saisie s : existing) {
                     super.add(s);
                 }
+                System.out.println("[DB DEBUG] PersistentScoreEleve loaded " + existing.size() + " saisies from DB");
             }
         } catch (Exception ex) {
-            // ne pas empêcher l'application de démarrer si la lecture échoue
             ex.printStackTrace();
         }
     }
 
-    /**
-     * Reload all saisies from the database into memory (clears existing).
-     */
+    
     public void reload() {
         try {
             super.clear();
@@ -46,26 +44,26 @@ public class PersistentScoreEleve extends ScoreEleve {
     @Override
     public void add(Saisie s) {
         if (s == null) return;
-        // tenter de persister (nomAffiche est le nom complet)
         String nomAffiche = s.getNomSaisie();
         Integer score = s.getScoreSaisie();
         Long joueurId = null;
-        // si nomAffiche contient un espace, on essaie de déduire nom/prénom
         if (nomAffiche != null) {
             String[] parts = nomAffiche.trim().split(" ", 2);
             if (parts.length == 2) {
                 try {
+                    System.out.println("[DB DEBUG] trying to insert/find joueur: " + parts[0] + " " + parts[1]);
                     joueurId = joueurDao.insertIfNotExists(parts[0], parts[1]);
+                    System.out.println("[DB DEBUG] joueurId returned: " + joueurId);
                 } catch (Exception ex) {
-                    // ignore and proceed with null joueurId
                     joueurId = null;
                 }
             }
         }
         try {
+            System.out.println("[DB DEBUG] inserting saisie nomAffiche='" + nomAffiche + "' score=" + score + " joueurId=" + joueurId);
             saisieDao.insert(nomAffiche, score, joueurId);
+            System.out.println("[DB DEBUG] insert succeeded");
         } catch (Exception ex) {
-            // log to console and continue to keep UI responsive
             ex.printStackTrace();
         }
         super.add(s);

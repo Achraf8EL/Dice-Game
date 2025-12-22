@@ -15,9 +15,7 @@ public class ScoreEleve {
         return Collections.unmodifiableList(saisies);
     }
 
-    /**
-     * Clear all saved saisies (for implementations that reload from persistence).
-     */
+    
     protected void clear() {
         saisies.clear();
     }

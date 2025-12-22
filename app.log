@@ -1,0 +1,56 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -----------------------< org.dicegame:dice-game >-----------------------
+[INFO] Building dice-game 1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> javafx:0.0.7:run (default-cli) > process-resources @ dice-game >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ dice-game ---
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] Copying 6 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] <<< javafx:0.0.7:run (default-cli) < process-resources @ dice-game <<<
+[INFO] 
+[INFO] 
+[INFO] --- javafx:0.0.7:run (default-cli) @ dice-game ---
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.dicegame:dice-game:jar:1.0-SNAPSHOT
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.openjfx:javafx-base:jar:mac-aarch64 -> duplicate declaration of version ${javafx.version} @ line 53, column 17
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: org.openjfx:javafx-graphics:jar:mac-aarch64 -> duplicate declaration of version ${javafx.version} @ line 77, column 17
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] 
+[INFO] -----------------------< org.dicegame:dice-game >-----------------------
+[INFO] Building dice-game 1.0-SNAPSHOT
+[INFO]   from modifiedPom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] >>> javafx:0.0.7:dorun (default-cli) > process-classes @ dice-game >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ dice-game ---
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] Copying 6 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ dice-game ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] <<< javafx:0.0.7:dorun (default-cli) < process-classes @ dice-game <<<
+[INFO] 
+[INFO] 
+[INFO] --- javafx:0.0.7:dorun (default-cli) @ dice-game ---
+[DB DEBUG] Score persistence mode = DB
+SLF4J: No SLF4J providers were found.
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#noProviders for further details.
+[DB DEBUG] PersistentScoreEleve loaded 13 saisies from DB
+[DB DEBUG] trying to insert/find joueur: l'abeille maya
+[DB DEBUG] joueurId returned: 15
+[DB DEBUG] inserting saisie nomAffiche='l'abeille maya' score=20 joueurId=15
+[DB DEBUG] insert succeeded
+[DB DEBUG] Partie persisted id=7

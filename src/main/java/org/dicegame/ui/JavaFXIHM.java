@@ -1,22 +1,36 @@
 package org.dicegame.ui;
 
+import org.dicegame.controller.Partie;
+import org.dicegame.model.Joueur;
+import org.dicegame.model.Randomizer;
+import org.dicegame.model.Saisie;
+import org.dicegame.model.ScoreEleve;
+import org.dicegame.persistence.ScoreEleveFactory;
+
 import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import org.dicegame.controller.Partie;
-import org.dicegame.model.*;
-import javafx.application.Platform;
-import javafx.stage.Modality;
-
-import org.dicegame.persistence.ScoreEleveFactory;
 
 
 public class JavaFXIHM implements IHM {
@@ -41,6 +55,7 @@ public class JavaFXIHM implements IHM {
 
     private Partie partieEnCours;
     private Joueur joueurEnCours;
+    private Long currentPartieId = null;
 
     private int tourCourant = 1;
     private int scoreCourant = 0;
@@ -62,21 +77,38 @@ public class JavaFXIHM implements IHM {
         Button scoresBtn = new Button("Tableau des scores");
         Button rulesBtn = new Button("Règles");
         Button paramsBtn = new Button("Paramètres");
+        Button partiesBtn = new Button("Parties");
 
         playBtn.setOnAction(e -> jouer());
         scoresBtn.setOnAction(e -> afficherTableauScores());
+        partiesBtn.setOnAction(e -> afficherParties());
         rulesBtn.setOnAction(e -> afficherRegles());
         paramsBtn.setOnAction(e -> openConfigDialog());
 
-        HBox top = new HBox(10, title, new Region(), playBtn, scoresBtn, rulesBtn, paramsBtn);
+        HBox top = new HBox(10, title, new Region(), playBtn, scoresBtn, partiesBtn, rulesBtn, paramsBtn);
         HBox.setHgrow(top.getChildren().get(1), Priority.ALWAYS);
         top.setAlignment(Pos.CENTER_LEFT);
         top.setPadding(new Insets(14));
         top.getStyleClass().add("topbar");
 
-        // Dés + titres
         dieView1 = new DeVisualisation();
         dieView2 = new DeVisualisation();
+
+        try {
+            javax.sql.DataSource ds = org.dicegame.persistence.DataSourceProvider.getDataSource();
+            org.dicegame.persistence.DeDao deDao = new org.dicegame.persistence.DeDao(ds);
+            int[] last = deDao.getLastRoll();
+            int v1 = last[0];
+            int v2 = last[1];
+            org.dicegame.model.De temp1 = new org.dicegame.model.De(randomizer);
+            org.dicegame.model.De temp2 = new org.dicegame.model.De(randomizer);
+            temp1.addPropertyChangeListener(dieView1);
+            temp2.addPropertyChangeListener(dieView2);
+            temp1.setValeurActuel(v1);
+            temp2.setValeurActuel(v2);
+        } catch (Exception ex) {
+            System.out.println("[DB DEBUG] could not load saved dice: " + ex.getMessage());
+        }
 
         Label l1 = new Label("Dé 1");
         l1.getStyleClass().add("die-title");
@@ -119,7 +151,6 @@ public class JavaFXIHM implements IHM {
     @Override
     public void jouer() {
 
-        // 1) Nouvelle partie
         if (partieEnCours == null) {
 
             TextInputDialog prenomDlg = new TextInputDialog();
@@ -142,6 +173,18 @@ public class JavaFXIHM implements IHM {
             partieEnCours.getDe1().addPropertyChangeListener(dieView1);
             partieEnCours.getDe2().addPropertyChangeListener(dieView2);
 
+            try {
+                javax.sql.DataSource ds = org.dicegame.persistence.DataSourceProvider.getDataSource();
+                org.dicegame.persistence.JoueurDao joueurDao = new org.dicegame.persistence.JoueurDao(ds);
+                Long joueurId = null;
+                try { joueurId = joueurDao.insertIfNotExists(joueurEnCours.getNomJoueur(), joueurEnCours.getPrenomJoueur()); } catch (Exception ignore) {}
+                org.dicegame.persistence.PartieDao partieDao = new org.dicegame.persistence.PartieDao(ds);
+                currentPartieId = partieDao.insertPartie(nbTours, pointsSi7, joueurId, 0);
+            } catch (Exception ex) {
+                System.out.println("[DB DEBUG] Could not create partie at start: " + ex.getMessage());
+                currentPartieId = null;
+            }
+
             tourCourant = 1;
             scoreCourant = 0;
             tourEnCours = false;
@@ -153,28 +196,24 @@ public class JavaFXIHM implements IHM {
             return;
         }
 
-        // 2) Partie finie => on ignore les clics (on attend que le reset soit fait)
         if (finDePartie) return;
 
-        // 3) Un clic = un tour
         lancerUnTour();
     }
 
     private void lancerUnTour() {
 
 
-        if (tourEnCours) return; // évite double clic pendant animation
+        if (tourEnCours) return; 
         tourEnCours = true;
         playBtn.setDisable(true);
 
-        // Dé 1
         setActiveDie(1);
         statusLabel.setText("Tour " + tourCourant + "/" + nbTours + " - Dé 1");
         partieEnCours.getDe1().Lancer();
 
         PauseTransition p1 = new PauseTransition(Duration.millis(250));
         p1.setOnFinished(e1 -> {
-            // Dé 2
             setActiveDie(2);
             statusLabel.setText("Tour " + tourCourant + "/" + nbTours + " - Dé 2");
             partieEnCours.getDe2().Lancer();
@@ -192,12 +231,20 @@ public class JavaFXIHM implements IHM {
                 statusLabel.setText("Tour " + tourCourant + "/" + nbTours +
                         " - " + v1 + " + " + v2 + " = " + somme + " | Score=" + scoreCourant);
 
-                // avancer tour
+                int pointsThisTurn = (somme == 7) ? pointsSi7 : 0;
+                if (partieEnCours != null) partieEnCours.recordLancer(tourCourant, v1, v2, pointsThisTurn);
+                try {
+                    javax.sql.DataSource ds = org.dicegame.persistence.DataSourceProvider.getDataSource();
+                    org.dicegame.persistence.DeDao deDao = new org.dicegame.persistence.DeDao(ds);
+                    deDao.insertRoll(currentPartieId == null ? null : currentPartieId.intValue(), tourCourant, v1, v2, somme, pointsThisTurn);
+                } catch (Exception ex) {
+                    System.out.println("[DB DEBUG] could not persist dice values: " + ex.getMessage());
+                }
+
                 tourCourant++;
 
                 if (tourCourant > nbTours) {
                     tourEnCours = false;
-                    // on laisse le bouton désactivé, la fin va faire le reset
                     finirPartieEtPreparerNouveauJoueur();
                     return;
                 }
@@ -219,14 +266,47 @@ public class JavaFXIHM implements IHM {
         if (finDePartie) return;
         finDePartie = true;
 
-        playBtn.setDisable(true); // blocage pendant la fin
+        playBtn.setDisable(true); 
 
         String nomAffiche = "";
         try {
-            // sauvegarde score
             joueurEnCours.Majscore(scoreCourant);
             nomAffiche = joueurEnCours.getNomJoueur() + " " + joueurEnCours.getPrenomJoueur();
             scoreEleve.add(new Saisie(nomAffiche, scoreCourant));
+
+                    try {
+                        javax.sql.DataSource ds = org.dicegame.persistence.DataSourceProvider.getDataSource();
+                        org.dicegame.persistence.PartieDao partieDao = new org.dicegame.persistence.PartieDao(ds);
+                        Long joueurId = null;
+                        if (currentPartieId != null) {
+                            partieDao.updatePartieFinished(currentPartieId, scoreCourant);
+                            System.out.println("[DB DEBUG] Partie updated id=" + currentPartieId);
+                            try (java.sql.Connection c = ds.getConnection();
+                                 java.sql.PreparedStatement ps = c.prepareStatement("SELECT joueur_id FROM dicegame.partie WHERE \"idPartie\" = ?")) {
+                                ps.setLong(1, currentPartieId);
+                                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                                    if (rs.next()) joueurId = rs.getLong(1);
+                                }
+                            }
+                        } else {
+                            org.dicegame.persistence.JoueurDao joueurDao = new org.dicegame.persistence.JoueurDao(ds);
+                            try { joueurId = joueurDao.insertIfNotExists(joueurEnCours.getNomJoueur(), joueurEnCours.getPrenomJoueur()); } catch (Exception ignore) {}
+                            long partieId = partieDao.insertPartie(nbTours, pointsSi7, joueurId, scoreCourant);
+                            System.out.println("[DB DEBUG] Partie persisted id=" + partieId);
+                        }
+                        if (joueurId != null) {
+                            try (java.sql.Connection c = ds.getConnection();
+                                 java.sql.PreparedStatement ps = c.prepareStatement("UPDATE dicegame.joueur SET \"scoreJoueur\" = ? WHERE \"idJoueur\" = ?")) {
+                                ps.setInt(1, scoreCourant);
+                                ps.setLong(2, joueurId);
+                                ps.executeUpdate();
+                                System.out.println("[DB DEBUG] Joueur score updated id=" + joueurId);
+                            }
+                        }
+                    } catch (Exception ex) {
+                        System.out.println("[DB DEBUG] Could not persist partie: " + ex.getMessage());
+                        ex.printStackTrace();
+                    }
 
             statusLabel.setText("Terminé. Score de " + nomAffiche + " = " + scoreCourant);
 
@@ -236,15 +316,13 @@ public class JavaFXIHM implements IHM {
             a.setTitle("Partie finie");
             a.setHeaderText("Partie terminée");
             a.setContentText("Score final : " + scoreCourant + "\n(ajouté au tableau des scores)");
-            a.showAndWait();
+            javafx.application.Platform.runLater(a::showAndWait);
 
 
         } catch (Exception ex) {
-            // si une erreur empêche le reset, on la voit au moins en console
             ex.printStackTrace();
             statusLabel.setText("Erreur pendant la fin de partie (voir console).");
         } finally {
-            // RESET garanti même s'il y a une exception
             partieEnCours = null;
             joueurEnCours = null;
 
@@ -283,7 +361,6 @@ public class JavaFXIHM implements IHM {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         Button refreshBtn = new Button("Rafraîchir");
         refreshBtn.setOnAction(ev -> {
-            // If underlying ScoreEleve is persistent, ask it to reload
             if (scoreEleve instanceof org.dicegame.persistence.PersistentScoreEleve) {
                 ((org.dicegame.persistence.PersistentScoreEleve) scoreEleve).reload();
             }
@@ -302,6 +379,88 @@ public class JavaFXIHM implements IHM {
         scene.getStylesheets().add(getClass().getResource("/ui/style.css").toExternalForm());
 
         dialog.setScene(scene);
+        dialog.showAndWait();
+    }
+
+    public void afficherParties() {
+        Stage dialog = new Stage();
+        dialog.initOwner(stage);
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle("Parties enregistrées");
+
+        TableView<org.dicegame.persistence.PartieWithPlayer> table = new TableView<>();
+        TableColumn<org.dicegame.persistence.PartieWithPlayer, Long> colId = new TableColumn<>("ID");
+        colId.setCellValueFactory(new PropertyValueFactory<>("idPartie"));
+
+        TableColumn<org.dicegame.persistence.PartieWithPlayer, String> colPlayer = new TableColumn<>("Joueur");
+        colPlayer.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(
+                (c.getValue().getNomJoueur() == null ? "?" : c.getValue().getNomJoueur()) + " " + (c.getValue().getPrenomJoueur() == null ? "" : c.getValue().getPrenomJoueur())
+        ));
+
+        TableColumn<org.dicegame.persistence.PartieWithPlayer, Integer> colScore = new TableColumn<>("Score");
+        colScore.setCellValueFactory(new PropertyValueFactory<>("scoreFinal"));
+
+        TableColumn<org.dicegame.persistence.PartieWithPlayer, java.time.OffsetDateTime> colStarted = new TableColumn<>("Démarrée");
+        colStarted.setCellValueFactory(new PropertyValueFactory<>("startedAt"));
+
+        table.getColumns().addAll(colId, colPlayer, colScore, colStarted);
+
+        Button refreshBtn = new Button("Rafraîchir");
+        Button viewLancersBtn = new Button("Voir lancers");
+
+        refreshBtn.setOnAction(ev -> {
+            try {
+                org.dicegame.persistence.PartieDao pd = new org.dicegame.persistence.PartieDao(org.dicegame.persistence.DataSourceProvider.getDataSource());
+                java.util.List<org.dicegame.persistence.PartieWithPlayer> list = pd.listAllWithPlayerName();
+                table.setItems(javafx.collections.FXCollections.observableArrayList(list));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        viewLancersBtn.setOnAction(ev -> {
+            org.dicegame.persistence.PartieWithPlayer sel = table.getSelectionModel().getSelectedItem();
+            if (sel == null) return;
+            try {
+                org.dicegame.persistence.DeDao deDao = new org.dicegame.persistence.DeDao(org.dicegame.persistence.DataSourceProvider.getDataSource());
+                java.util.List<org.dicegame.model.De> l = deDao.listDeForPartie(sel.getIdPartie());
+                Stage dlg = new Stage();
+                dlg.initOwner(dialog);
+                dlg.initModality(Modality.APPLICATION_MODAL);
+                TableView<org.dicegame.model.De> lt = new TableView<>();
+                TableColumn<org.dicegame.model.De, Integer> cTour = new TableColumn<>("Tour");
+                cTour.setCellValueFactory(new PropertyValueFactory<>("tour"));
+                TableColumn<org.dicegame.model.De, Integer> cD1 = new TableColumn<>("Dé1");
+                cD1.setCellValueFactory(new PropertyValueFactory<>("de1"));
+                TableColumn<org.dicegame.model.De, Integer> cD2 = new TableColumn<>("Dé2");
+                cD2.setCellValueFactory(new PropertyValueFactory<>("de2"));
+                TableColumn<org.dicegame.model.De, Integer> cSomme = new TableColumn<>("Somme");
+                cSomme.setCellValueFactory(new PropertyValueFactory<>("somme"));
+                TableColumn<org.dicegame.model.De, Integer> cPts = new TableColumn<>("Pts");
+                cPts.setCellValueFactory(new PropertyValueFactory<>("pointsGagnes"));
+                lt.getColumns().addAll(cTour, cD1, cD2, cSomme, cPts);
+                lt.setItems(javafx.collections.FXCollections.observableArrayList(l));
+                Scene s = new Scene(new BorderPane(lt), 520, 320);
+                dlg.setScene(s);
+                dlg.setTitle("Dés partie " + sel.getIdPartie());
+                dlg.showAndWait();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        HBox controls = new HBox(8, refreshBtn, viewLancersBtn);
+        controls.setPadding(new Insets(8));
+        controls.setAlignment(Pos.CENTER_RIGHT);
+
+        BorderPane root = new BorderPane(table);
+        root.setTop(controls);
+        root.setPadding(new Insets(12));
+
+        Scene scene = new Scene(root, 720, 420);
+        scene.getStylesheets().add(getClass().getResource("/ui/style.css").toExternalForm());
+        dialog.setScene(scene);
+        refreshBtn.fire();
         dialog.showAndWait();
     }
 

@@ -11,7 +11,7 @@ public final class Config {
     }
 
     public static String getDbUrl() {
-        return getenvOr("DB_URL", "jdbc:postgresql://localhost:5432/dicegame");
+        return getenvOr("DB_URL", "jdbc:postgresql://localhost:5433/dicegame");
     }
     public static String getDbUser() {
         return getenvOr("DB_USER", "postgres");

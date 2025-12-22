@@ -1,7 +1,13 @@
 package org.dicegame.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.dicegame.model.De;
-import org.dicegame.model.*;
+import org.dicegame.model.Joueur;
+import org.dicegame.model.Randomizer;
+import org.dicegame.model.Saisie;
+import org.dicegame.model.ScoreEleve;
 
 public class Partie {
 private int nbTours = 10;
@@ -12,6 +18,7 @@ private final De de2;
 
 private final Joueur joueur;
 private final ScoreEleve scoreEleve;
+    private final List<org.dicegame.model.Lancer> lancers = new ArrayList<>();
 
 public Partie(Joueur joueur, ScoreEleve scoreEleve,Randomizer randomizer) {
     this.joueur = joueur;
@@ -55,6 +62,8 @@ public int lancerDe1(){
             if (somme == 7) {
                 score += pointsSi7;
             }
+            int points = (somme == 7) ? pointsSi7 : 0;
+            lancers.add(new org.dicegame.model.Lancer(i+1, de1.getValeurActuel(), de2.getValeurActuel(), points));
         }
 
         joueur.Majscore(score);
@@ -70,6 +79,12 @@ public int lancerDe1(){
     }
     public ScoreEleve getScoreEleve() {
     return scoreEleve;
+    }
+
+    public List<org.dicegame.model.Lancer> getLancers() { return lancers; }
+
+    public void recordLancer(int tour, int d1, int d2, int points) {
+        lancers.add(new org.dicegame.model.Lancer(tour, d1, d2, points));
     }
 
 
