@@ -17,7 +17,7 @@ public final class Config {
         return getenvOr("DB_USER", "postgres");
     }
     public static String getDbPassword() {
-        return getenvOr("DB_PASSWORD", "");
+        return getenvOr("DB_PASSWORD", "postgres");
     }
     public static String getDbSchema() {
         return getenvOr("DB_SCHEMA", "dicegame");

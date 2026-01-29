@@ -59,7 +59,7 @@ On utilise Flyway pour les migrations de base de données, ce qui permet de gard
    ```
    Ça lance PostgreSQL sur le port 5433 avec la DB `dicegame`.
 
-3. **Configurer les variables d'environnement** (optionnel, sinon valeurs par défaut) :
+3. **Configurer les variables d'environnement**  :
    ```bash
    export DB_URL=jdbc:postgresql://localhost:5433/dicegame
    export DB_USER=postgres
@@ -85,6 +85,11 @@ On a des tests unitaires avec JUnit. Pour les lancer :
 ```bash
 mvn test
 ```
+
+Les tests couvrent notamment :
+- `De` : initialisation, mise à jour de la valeur, bornes du lancer.
+- `Randomizer` : génération de valeurs entre 1 et 6.
+- `JoueurDao` : insertion idempotente avec une base H2 en mémoire.
 
 ## Configuration de la base de données
 
@@ -176,6 +181,16 @@ Ces données montrent comment les scores sont calculés : par exemple, dans la p
 - **Règles** : Rappel des règles du jeu.
 - **Paramètres** : Change le nombre de tours ou les points pour un 7.
 - **Parties** : Historique des parties jouées.
+
+## Aperçu de l'interface
+
+![Accueil](src/ressources/interface.png)
+![Nouvelle partie](src/ressources/partie.png)
+![Règles](src/ressources/regle.png)
+![Paramètres](src/ressources/parametre.png)
+![Scores](src/ressources/tablescore.png)
+![Tests](src/ressources/test.png)
+
 
 ## Contribution
 
